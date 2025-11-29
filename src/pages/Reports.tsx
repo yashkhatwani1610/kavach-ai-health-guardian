@@ -41,35 +41,78 @@ const Reports = () => {
   }, [user]);
 
   const fetchReports = async () => {
+    if (!user) return;
+    
     const { data, error } = await supabase
       .from("reports")
       .select("*")
-      .eq("user_id", user?.id)
+      .eq("user_id", user.id)
       .order("uploaded_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching reports:", error);
+    if (error && error.code !== 'PGRST116') {
+      toast.error("Failed to load reports");
     } else {
       setReports(data || []);
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) {
+      toast.error("You must be logged in to upload reports");
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only PDF, JPEG, and PNG files are allowed");
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
     setUploading(true);
     try {
-      // TODO: Implement actual file upload to storage and backend endpoint
-      // For now, just simulate upload
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
+      const { error: uploadError } = await supabase.storage
+        .from('reports')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('reports')
+        .getPublicUrl(fileName);
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('reports')
+        .insert([{
+          user_id: user.id,
+          file_url: publicUrl,
+          report_type: file.type.includes('pdf') ? 'PDF Document' : 'Image',
+        }]);
+
+      if (dbError) throw dbError;
+
       toast.success("Report uploaded successfully!");
       fetchReports();
     } catch (error: any) {
       toast.error(error.message || "Failed to upload report");
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -94,7 +137,7 @@ const Reports = () => {
             </div>
             <h3 className="text-lg font-semibold mb-2 text-card-foreground">Upload Report</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Upload your medical reports in PDF format
+              Upload your medical reports (PDF, JPEG, PNG - Max 10MB)
             </p>
             <label htmlFor="file-upload">
               <Button disabled={uploading} asChild>
@@ -106,7 +149,7 @@ const Reports = () => {
             <input
               id="file-upload"
               type="file"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png"
               onChange={handleFileUpload}
               className="hidden"
             />
@@ -137,7 +180,13 @@ const Reports = () => {
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">View</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open(report.file_url, '_blank')}
+                    >
+                      View
+                    </Button>
                   </div>
                 </Card>
               ))}

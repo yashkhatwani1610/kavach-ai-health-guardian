@@ -7,6 +7,18 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import kavachLogo from "@/assets/kavach-logo.jpeg";
 import { Session } from "@supabase/supabase-js";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email too long"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72, "Password too long"),
+});
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Invalid email address").max(255, "Email too long"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -43,14 +55,21 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      const validation = signupSchema.safeParse({ name, email, password });
+      if (!validation.success) {
+        toast.error(validation.error.errors[0].message);
+        setLoading(false);
+        return;
+      }
+
       const redirectUrl = `${window.location.origin}/dashboard`;
       const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: validation.data.email,
+        password: validation.data.password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name,
+            name: validation.data.name,
           },
         },
       });
@@ -78,9 +97,16 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      const validation = loginSchema.safeParse({ email, password });
+      if (!validation.success) {
+        toast.error(validation.error.errors[0].message);
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validation.data.email,
+        password: validation.data.password,
       });
 
       if (error) {

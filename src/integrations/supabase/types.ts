@@ -63,7 +63,7 @@ export type Database = {
           id: string
           name: string | null
           relation_type: string | null
-          "user id": string | null
+          user_id: string | null
         }
         Insert: {
           contact?: string | null
@@ -71,7 +71,7 @@ export type Database = {
           id?: string
           name?: string | null
           relation_type?: string | null
-          "user id"?: string | null
+          user_id?: string | null
         }
         Update: {
           contact?: string | null
@@ -79,12 +79,12 @@ export type Database = {
           id?: string
           name?: string | null
           relation_type?: string | null
-          "user id"?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "parents_user id_fkey"
-            columns: ["user id"]
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -114,41 +114,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      Reports: {
-        Row: {
-          created_at: string
-          file_url: string | null
-          id: number
-          notes: string | null
-          report_type: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          file_url?: string | null
-          id?: number
-          notes?: string | null
-          report_type?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          file_url?: string | null
-          id?: number
-          notes?: string | null
-          report_type?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "Reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       sensor_logs: {
         Row: {
@@ -228,36 +193,6 @@ export type Database = {
           heart_rate?: number | null
           id?: string
           respiration_rate?: number | null
-          spo2?: number | null
-          temperature?: number | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      Vitals: {
-        Row: {
-          bp: string | null
-          created_at: string | null
-          heart_rate: number | null
-          id: number
-          spo2: number | null
-          temperature: number | null
-          user_id: string
-        }
-        Insert: {
-          bp?: string | null
-          created_at?: string | null
-          heart_rate?: number | null
-          id?: number
-          spo2?: number | null
-          temperature?: number | null
-          user_id: string
-        }
-        Update: {
-          bp?: string | null
-          created_at?: string | null
-          heart_rate?: number | null
-          id?: number
           spo2?: number | null
           temperature?: number | null
           user_id?: string

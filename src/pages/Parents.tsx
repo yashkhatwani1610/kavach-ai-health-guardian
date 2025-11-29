@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const parentSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
+  relationType: z.string().trim().min(2, "Relation type required").max(50, "Relation type too long"),
+  contact: z.string().trim().max(500, "Contact/notes too long"),
+});
 
 const Parents = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,13 +53,15 @@ const Parents = () => {
   }, [user]);
 
   const fetchParents = async () => {
+    if (!user) return;
+    
     const { data, error } = await supabase
       .from("parents")
       .select("*")
-      .eq("user id", user?.id);
+      .eq("user_id", user.id);
 
-    if (error) {
-      console.error("Error fetching parents:", error);
+    if (error && error.code !== 'PGRST116') {
+      toast.error("Failed to load family information");
     } else {
       setParents(data || []);
     }
@@ -60,14 +69,27 @@ const Parents = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+    
     setLoading(true);
 
     try {
+      const validation = parentSchema.safeParse({ name, relationType, contact });
+      if (!validation.success) {
+        toast.error(validation.error.errors[0].message);
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("parents").insert({
-        "user id": user?.id,
-        name,
-        relation_type: relationType,
-        contact,
+        user_id: user.id,
+        name: validation.data.name,
+        relation_type: validation.data.relationType,
+        contact: validation.data.contact || null,
       });
 
       if (error) throw error;
