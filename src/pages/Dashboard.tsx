@@ -43,32 +43,36 @@ const Dashboard = () => {
   }, [user]);
 
   const fetchVitals = async () => {
+    if (!user) return;
+    
     const { data, error } = await supabase
       .from("vitals")
       .select("*")
-      .eq("user_id", user?.id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching vitals:", error);
+    if (error && error.code !== 'PGRST116') {
+      // Silently handle - no data is expected initially
     } else {
       setVitals(data);
     }
   };
 
   const fetchEnvironment = async () => {
+    if (!user) return;
+    
     const { data, error } = await supabase
       .from("environment")
       .select("*")
-      .eq("user_id", user?.id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching environment:", error);
+    if (error && error.code !== 'PGRST116') {
+      // Silently handle - no data is expected initially
     } else {
       setEnvironment(data);
     }
